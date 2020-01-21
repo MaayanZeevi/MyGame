@@ -31,8 +31,10 @@ public class MyGameGUI implements Runnable {
 	double maxY = Double.NEGATIVE_INFINITY;
 	double minX = Double.POSITIVE_INFINITY;
 	double minY = Double.POSITIVE_INFINITY;
+	/*
+	 * constractore
+	 */
 
-	//DOO
 	public MyGameGUI() {
 		StdDraw.setCanvasSize(1000, 700);
 		this.level = -1;
@@ -41,11 +43,9 @@ public class MyGameGUI implements Runnable {
 
 
 	/*
-     * This method draws the graph. In more details, this function draws the graph with certain scales
-     * that we defined in the function, gets the location of each Node , draws them and draws there edges on the Window.
-     * This method also sets colors and all what is linked to graphics and visualization of the graph.
+     * This method draws the graph.
      */
-//DOO
+
 	public void DrawGraph() {
 		rangeX(graph.getV());
 		rangeY(graph.getV());
@@ -78,7 +78,7 @@ public class MyGameGUI implements Runnable {
 
 	/**
 	 * Creates a range of the x values of the nodes.
-	 * @param collection represents a list with all the nodes in the graph.
+	 *
 	 *
 	 */
 
@@ -102,7 +102,7 @@ public class MyGameGUI implements Runnable {
 
 	}
 	/*
-     * This method gets each Fruit (the string , which is the path to a picture) and draws it on the graph by getting its location and its image.
+     * This method gets each Fruit  and draws it on the graph by getting its location and its image.
      */
 
 
@@ -117,9 +117,9 @@ public class MyGameGUI implements Runnable {
 	}
 
 	/*
-     * This method gets each Robot (the string , which is the path to a picture) and draws it on the graph by getting its location and its image.
+     * This method gets each Robot  and draws it on the graph by getting its location and its image.
      */
-	//DOO
+
 	private void DrawRobots() {
 		List<String> Robots = this.game.getRobots();
 		for (String r : Robots) {
@@ -129,7 +129,7 @@ public class MyGameGUI implements Runnable {
 	}
 
 	/*
-     * This method make a visualization of the time while the game is running.
+     * This method make a visualization of the time when the game is running.
      */
 
 	//DOO
@@ -150,9 +150,7 @@ public class MyGameGUI implements Runnable {
 	}
 
 	/*
-     * This method enables the user to choose which level he wants to play.
-     * Depending on the level, the graph will be loaded with its fruits and Robots. In this mode, the user can choose from where he wants to move the robots to.
-     * This method will use other methods in order to set everything in place.
+     * This method enables the user to choose play with mode Manual
      */
 	public void Manual() {
 		this.GameServer = new GameServer();
@@ -169,7 +167,7 @@ public class MyGameGUI implements Runnable {
 		this.graph.init(this.game.getGraph());
 		this.graph_algo = new Graph_Algo(this.graph);
 		this.DrawGraph();
-		this.addManualRobots();
+		this.addRobotsManual();
 		this.DrawFruit();
 		this.game.startGame();
 		StdDraw.enableDoubleBuffering();
@@ -204,8 +202,7 @@ public class MyGameGUI implements Runnable {
 
 
 	/*
-     * This method enables the user to choose which level he wants to play but doesn't give him the choice to move the robots.
-     * Everything is done in an automatic manner.
+     * This method enables the user to choose to play with mode Automatic
      */
 	public void Automatic() {
 
@@ -214,9 +211,9 @@ public class MyGameGUI implements Runnable {
 		this.level = getLevel()-1;
 		this.game = Game_Server.getServer(level );
 
-			Gson gson = new Gson();
-			MyGameGUI temp = gson.fromJson(game.toString(), MyGameGUI.class);
-			this.GameServer = temp.GameServer;
+		Gson gson = new Gson();
+		MyGameGUI temp = gson.fromJson(game.toString(), MyGameGUI.class);
+		this.GameServer = temp.GameServer;
 
 		this.robots = this.GameServer.robots;
 		game = Game_Server.getServer(this.level );
@@ -254,12 +251,13 @@ public class MyGameGUI implements Runnable {
 	}
 
 	/*
-     * Like its name says, this method enables the user to add Robots manually.
-     * The function allow the user to place the robots on a specific node by giving it's key number.
+     * this method enables the user to add Robots manually.
+     *
      */
 
-	//DOO
-	public boolean addManualRobots() {
+
+	public boolean addRobotsManual() {
+
 		for (int i = 0; i < this.robots; i++) {
 			final JFrame jframe = new JFrame();
 			int PlaceInt = 0;
@@ -284,8 +282,68 @@ public class MyGameGUI implements Runnable {
 		return true;
 	}
 
+
 	/*
-     * Returns an integer and allows the user to select a specific level from the 24 levels existing.
+	 * This method adds Robots automatically to the graph.
+	 */
+	public void AutomaticRobot() {
+
+		double epsilon = 0.0000000001;
+		List<String> fruitString = this.game.getFruits();
+
+		LinkedList<Fruit> Fruits = new LinkedList<Fruit>();
+
+		for (String s : fruitString) {
+
+			Fruits.add(new Fruit(s));
+		}
+
+
+		for (int i = 0; i < this.robots; i++) {
+			Fruit fruitMax = null;
+
+			for (Fruit f : Fruits) {
+
+				if (fruitMax == null) fruitMax = f;
+				else if (fruitMax.value < f.value) ;
+				fruitMax = f;
+			}
+			Collection<node_data> Nodes = this.graph.getV();
+			edge_data fruitEdge = null;
+
+			for (node_data n : Nodes) {
+
+				for (node_data j : Nodes) {
+					if (n.getKey() == j.getKey()) continue;
+					boolean isBetween = isBtween(n, j, fruitMax);
+					if (isBetween == true) {
+
+						fruitEdge = this.graph.getEdge(n.getKey(), j.getKey());
+						if (fruitEdge != null) break;
+					}
+
+				}
+				if (fruitEdge != null) break;
+			}
+			double Ysrc = this.graph.getNode(fruitEdge.getSrc()).getLocation().y();
+
+			double Ydest = this.graph.getNode(fruitEdge.getDest()).getLocation().y();
+
+			if (fruitMax.type == 1) {
+				if (Ysrc < Ydest) this.game.addRobot(fruitEdge.getSrc());
+				if (Ysrc > Ydest) this.game.addRobot(fruitEdge.getDest());
+
+			} else {
+				if (Ysrc > Ydest) this.game.addRobot(fruitEdge.getSrc());
+				else this.game.addRobot(fruitEdge.getDest());
+
+			}
+			Fruits.remove(fruitMax);
+		}
+	}
+
+	/*
+     * Returns the level that the user chose
      */
 
 	//DOO
@@ -315,7 +373,7 @@ public class MyGameGUI implements Runnable {
 	}
 
 	/*
-     * This method calculates to which node each robot has to go to.
+     * This method determine to which node each robot do must go .
      */
 
 
@@ -407,84 +465,26 @@ public class MyGameGUI implements Runnable {
 
 
 
-	/*
-     * This method adds Robots automatically to the graph. It is used in the automaticGame method above.
-     * Depending on the location of each fruit on the graph, the robot will be set on the graph in order to get the highest score.
-     */
-	public void AutomaticRobot() {
-
-		double epsilon = 0.0000000001;
-		List<String> fruitString = this.game.getFruits();
-
-		LinkedList<Fruit> Fruits = new LinkedList<Fruit>();
-
-		for (String s : fruitString) {
-
-			Fruits.add(new Fruit(s));
-		}
 
 
-		for (int i = 0; i < this.robots; i++) {
-			Fruit fruitMax = null;
-
-			for (Fruit f : Fruits) {
-
-				if (fruitMax == null) fruitMax = f;
-				else if (fruitMax.value < f.value) ;
-				fruitMax = f;
-			}
-			Collection<node_data> Nodes = this.graph.getV();
-			edge_data fruitEdge = null;
-
-			for (node_data n : Nodes) {
-
-				for (node_data j : Nodes) {
-					if (n.getKey() == j.getKey()) continue;
-					boolean isBetween = isBtween(n, j, fruitMax);
-					if (isBetween == true) {
-
-						fruitEdge = this.graph.getEdge(n.getKey(), j.getKey());
-						if (fruitEdge != null) break;
-					}
-
-				}
-				if (fruitEdge != null) break;
-			}
-			double Ysrc = this.graph.getNode(fruitEdge.getSrc()).getLocation().y();
-
-			double Ydest = this.graph.getNode(fruitEdge.getDest()).getLocation().y();
-
-			if (fruitMax.type == 1) {
-				if (Ysrc < Ydest) this.game.addRobot(fruitEdge.getSrc());
-				if (Ysrc > Ydest) this.game.addRobot(fruitEdge.getDest());
-
-			} else {
-				if (Ysrc > Ydest) this.game.addRobot(fruitEdge.getSrc());
-				else this.game.addRobot(fruitEdge.getDest());
-
-			}
-			Fruits.remove(fruitMax);
-		}
-	}
-
-public boolean isBtween (node_data n1,node_data n2,Fruit fruitmax){
+	public boolean isBtween (node_data n1,node_data n2,Fruit fruitmax){
 
 
 		double epsilon=0.0000000001;
-	if ((n1.getLocation().x() - epsilon < fruitmax.getLocation().x() && n2.getLocation().x() + epsilon > fruitmax.getLocation().x()) ||
-			(n1.getLocation().x() + epsilon > fruitmax.getLocation().x() && n2.getLocation().x() - epsilon < fruitmax.getLocation().x())) {
-		if ((n1.getLocation().y() - epsilon < fruitmax.getLocation().y() && n2.getLocation().y() + epsilon > fruitmax.getLocation().y()) ||
-				(n1.getLocation().y() + epsilon > fruitmax.getLocation().y() && n2.getLocation().y() - epsilon < fruitmax.getLocation().y())) {
-			return true;
+		if ((n1.getLocation().x() - epsilon < fruitmax.getLocation().x() && n2.getLocation().x() + epsilon > fruitmax.getLocation().x()) ||
+				(n1.getLocation().x() + epsilon > fruitmax.getLocation().x() && n2.getLocation().x() - epsilon < fruitmax.getLocation().x())) {
+			if ((n1.getLocation().y() - epsilon < fruitmax.getLocation().y() && n2.getLocation().y() + epsilon > fruitmax.getLocation().y()) ||
+					(n1.getLocation().y() + epsilon > fruitmax.getLocation().y() && n2.getLocation().y() - epsilon < fruitmax.getLocation().y())) {
+				return true;
+			}
 		}
-	}
 
-	return false;
+		return false;
 
 	}
 	/*
-     * If the selected mode was "manual", the threads in charge will be in action to run the game in manual mode.
-     * If the selected mode was automatic, the game will run through different threads.
+     * If the selected mode was "manual",  the game run in manual mode.
+     * If the selected mode was automatic, the game run tin automatic mode.
      */
 	@Override
 	public void run() {
@@ -494,7 +494,7 @@ public boolean isBtween (node_data n1,node_data n2,Fruit fruitmax){
 	}
 
 	/*
-     *  this method will show on the screen a "game end message" and show the  were gained during the game.
+     *  print finsh game and score
      */
 	public void end() {
 		int score = 0;
